@@ -12,15 +12,15 @@ if __package__ == '' or __package__ is None:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from .agents import create_supervisor
-from .react_agents import create_react_supervisor
+# from .react_agents import create_react_supervisor
 from .utils import extract_ai_message_content
 
 async def chat_ui():
 
     """Main application entry point"""
-    supervisor = create_supervisor()
     # supervisor = create_react_supervisor()
-
+    supervisor = create_supervisor()
+    
     # Streamlit interface
     st.title("AI Assistant")
     logging.info("App started")
@@ -79,9 +79,6 @@ async def chat_ui():
 
 async def main():
     # Example user queries to test the graph:
-        # which assistants do you work with?
-        # Do you respond to weather related queries?
-        # How is weather in New York today?
         # calculate the result of 3 + 5
         # Get the details of jira id RG-3552 from the RG project queue.
         # Summarize the jira issue RG-457
@@ -91,8 +88,8 @@ async def main():
 
     print("User Request:", user_request)
     print("\n" + "="*80 + "\n")
-    async for step in create_supervisor().astream(
     # async for step in create_react_supervisor().astream(
+    async for step in create_supervisor().astream(
         {"messages": [{"role": "user", "content": user_request}]}
     ):
         for update in step.values():
