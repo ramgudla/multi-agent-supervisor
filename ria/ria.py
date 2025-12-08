@@ -11,8 +11,8 @@ if __package__ == '' or __package__ is None:
     __package__ = 'ria'
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from .agents import create_supervisor
 # from .react_agents import create_react_supervisor
+from .agents import create_supervisor
 from .utils import extract_ai_message_content
 
 async def chat_ui():
