@@ -1,5 +1,5 @@
 # ===================================== #
-#  AGENT PROMPTS
+#            AGENT PROMPTS
 # ===================================== #
 
 WORKERS = ["devops", "atlassian", "math"]
@@ -21,21 +21,8 @@ SUPERVISOR_PROMPT = (
     "4. If you have the final answer or outcome, return 'FINISH'.\n" 
 )
 
-REACT_SUPERVISOR_PROMPT = (
-    "You are a supervisor agent. Your role is to delegate tasks to specialized worker agents "
-    f"based on the user's request. Available agents are {WORKERS}. "
-    "After a worker agent completes its task, you will receive the result and should "
-    "either respond to the user or delegate to another agent if further steps are needed."
-
-    "Guidelines:\n"
-    "1. Always check the last message in the conversation to determine if the task has been completed.\n"
-    "2. If the task is complete, you might return the result to the user.\n"
-    "3. If the task is not complete, you would select appropriate tool and continue the workflow until completion.\n"
-    "4. If you have the final answer or outcome, return 'FINISH'.\n" 
-)
-
 # ===================================== #
-#  SUBAGENT TOOL DESCRIPTIONS
+#      SUBAGENT TOOL DESCRIPTIONS
 # ===================================== #
 
 devops_subagent_description = """read metrics, read logs, download logs from devops server.
