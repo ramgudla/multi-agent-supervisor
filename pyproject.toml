@@ -11,10 +11,11 @@ version = "0.1.0"
 description = "A multi-agent supervisor framework"
 requires-python = ">=3.12"
 dependencies = [
-    "langchain",
-    "langchain-community",
     "langchain_mcp_adapters",
     "langchain_ollama",
+    "deepagents",
     "streamlit",
-    "oci"
+    "oci",
+    "jupyter",
+    "ipykernel",
 ]
