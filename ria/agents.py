@@ -1,10 +1,11 @@
 import importlib
 from langchain.agents import create_agent
+from deepagents import create_deep_agent
 from langchain_core.tools import tool
 
 from .models import get_model
 from .tools import get_tools
-from .prompts import SUPERVISOR_PROMPT, WORKERS
+from .prompts import SUPERVISOR_PROMPT, DEEPAGENT_PROMPT, WORKERS
 
 # ===================================== #
 #               MODEL
@@ -24,8 +25,10 @@ def _get_prompts():
     prompts_module = importlib.import_module(prompts_module_str)
 
     for worker in WORKERS:
-        globals()[f"{worker}_agent_prompt"] = lambda worker=worker : getattr(prompts_module, f"{worker}_agent_prompt")
-        globals()[f"{worker}_subagent_description"] = lambda worker=worker : getattr(prompts_module, f"{worker}_subagent_description")
+        globals()[f"{worker}_agent_prompt"] = str(getattr(prompts_module, f"{worker}_agent_prompt"))
+        globals()[f"{worker}_agent_description"] = str(getattr(prompts_module, f"{worker}_agent_description"))
+        globals()[f"{worker}_subagent_prompt"] = str(getattr(prompts_module, f"{worker}_subagent_prompt"))
+
 
 # You can shape how your agent approaches tasks by providing a prompt.
 _get_prompts()
@@ -52,7 +55,7 @@ def _create_agents():
         globals()[f"{worker}_agent"] = lambda worker=worker : create_agent(
             model=llm,
             tools=tools[f"mcp_{worker}_tools"],
-            system_prompt=globals()[f"{worker}_agent_prompt"]()
+            system_prompt=globals()[f"{worker}_agent_prompt"]
         )
         agents.append(globals()[f"{worker}_agent"]())
 
@@ -62,36 +65,37 @@ def _create_agents():
 _create_agents()
 
 # ===================================== #
-#     SUBAGENTS AS SUPERVISOR TOOLS
+#      AGENTS AS SUPERVISOR TOOLS
 # ===================================== #
 
 supervisor_tools = []
 
 def _create_supervisor_tools():
-    """Create subagent tools from agents"""
+    """Create tools from agents"""
 
-    def create_subagent_tool(agent_func, tool_name: str, description: str):
-        """Create a subagent tool from an agent function"""
+    def create_agent_as_tool(agent_func, tool_name: str, description: str):
+        """Create a tool from an agent function"""
         @tool(name_or_callable=tool_name, description=description)
-        async def subagent_tool(request: str) -> str:
+        async def agent_as_tool(request: str) -> str:
             result = await agent_func().ainvoke({
                 "messages": [{"role": "user", "content": request}]
             })
             return result["messages"][-1].text
-        return subagent_tool
+        return agent_as_tool
 
     for worker in WORKERS:
-        globals()[f"{worker}_subagent"] = create_subagent_tool(
+        globals()[f"{worker}_agent_as_tool"] = create_agent_as_tool(
             agent_func=globals()[f"{worker}_agent"],
-            tool_name=f"{worker}_subagent",
-            description=globals()[f"{worker}_subagent_description"]()
+            tool_name=f"{worker}_agent_tool",
+            description=globals()[f"{worker}_agent_description"]
         )
-        supervisor_tools.append(globals()[f"{worker}_subagent"])
+        
+        supervisor_tools.append(globals()[f"{worker}_agent_as_tool"])
 
 _create_supervisor_tools()
 
 # ===================================== #
-#           SUPERVISOR AGENT
+#           SUPERVISOR
 # ===================================== #
 
 def create_supervisor():
@@ -103,36 +107,37 @@ def create_supervisor():
     )
     return supervisor
 
-# ===================================== #
-#  SUBAGENT TOOL DEFINITIONS (ALTERNATIVE)
-# ===================================== #
-# def create_subagent_tool(agent_func, tool_name: str, description: str):
-#         """Create a subagent tool from an agent function"""
+# ======================================= #
+# AGENT AS TOOL DEFINITIONS (ALTERNATIVES)
+# ======================================= #
+# def create_agent_as_tool(agent_func, tool_name: str, description: str):
+#         """Create a tool from an agent function"""
 #         @tool(name_or_callable=tool_name, description=description)
-#         async def subagent_tool(request: str) -> str:
+#         async def agent_as_tool(request: str) -> str:
 #             result = await agent_func().ainvoke({
 #                 "messages": [{"role": "user", "content": request}]
 #             })
 #             return result["messages"][-1].text
-#         return subagent_tool
+#         return agent_as_tool
 
-# devops_subagent = create_subagent_tool(
+# devops_agent_as_tool = create_agent_as_tool(
 #     agent_func=devops_agent,
-#     tool_name="devops_subagent",
+#     tool_name="devops_agent_tool",
 #     description="""read metrics, read logs, download logs from mc-dope (devops) servers.
 #     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
 #     Input: Natural language devops request (e.g., 'Are there any canary failures in mpaasoicnative tenancy of us-phoenix-1 region for the phonebook oracle integration cloud?')"""
 #     )
-# atlassian_subagent = create_subagent_tool(
+
+# atlassian_agent_as_tool = create_agent_as_tool(
 #     agent_func=atlassian_agent,
-#     tool_name="atlassian_subagent",
+#     tool_name="atlassian_agent_tool",
 #     description="""read, update comments, re-assign jira issues.
 #     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')"""
 #     )
 
-# subagents_definitions = """
+# agents_as_tools_str = """
 # @tool
-# async def devops_subagent(request: str) -> str:
+# async def devops_agent_as_tool(request: str) -> str:
 #     \"""read metrics, read logs, download logs from mc-dope (devops) servers.
 
 #     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
@@ -145,7 +150,7 @@ def create_supervisor():
 #     return result["messages"][-1].text
 
 # @tool
-# async def atlassian_subagent(request: str) -> str:
+# async def atlassian_agent_as_tool(request: str) -> str:
 #     \"""read, update comments, re-assign jira issues.
 
 #     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')
@@ -155,12 +160,10 @@ def create_supervisor():
 #     })
 #     return result["messages"][-1].text
 # """
-
-#exec(subagents_definitions)
-# Now, devops_subagent and atlassian_subagent are available in the current scope
+# exec(agents_as_tools_str) # Now, devops_agent_as_tool and atlassian_agent_as_tool are available in the current scope
 
 # @tool
-# async def devops_subagent(request: str) -> str:
+# async def devops_agent_as_tool(request: str) -> str:
 #     """read metrics, read logs, download logs from mc-dope (devops) servers.
 
 #     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
@@ -173,7 +176,7 @@ def create_supervisor():
 #     return result["messages"][-1].text
 
 # @tool
-# async def atlassian_subagent(request: str) -> str:
+# async def atlassian_agent_as_tool(request: str) -> str:
 #     """read, update comments, re-assign jira issues.
 
 #     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')
@@ -182,3 +185,62 @@ def create_supervisor():
 #         "messages": [{"role": "user", "content": request}]
 #     })
 #     return result["messages"][-1].text
+
+
+# ===================================== #
+#            DEEP AGENT
+# ===================================== #
+
+sub_agents = []
+
+def _create_subagents():
+    """Create subagents"""
+    for worker in WORKERS:
+        globals()[f"{worker}_subagent"] = {
+            "name": f"{worker}_subagent",
+            "description": globals()[f"{worker}_agent_description"],
+            "system_prompt": globals()[f"{worker}_subagent_prompt"],
+            "tools": tools[f"mcp_{worker}_tools"] if f"mcp_{worker}_tools" in tools.keys() else [],
+        }
+        sub_agents.append(globals()[f"{worker}_subagent"])
+
+_create_subagents()
+
+def create_deepagent():
+    """Create the deepagent that manages the agents"""
+
+    deep_agent = create_deep_agent(
+        model=llm,
+        tools=[],
+        system_prompt=DEEPAGENT_PROMPT,
+        subagents=sub_agents,
+    )
+    return deep_agent
+
+# ===================================== #
+#   SUBAGENTS DEFINITIONS (ALTERNATIVE)
+# ===================================== #
+
+# from .prompts import devops_subagent_prompt, atlassian_subagent_prompt, math_subagent_prompt
+# devops_subagent = {
+#     "name": "devops_subagent",
+#     "description": "Used to research specific AI policy and regulation questions in depth.",
+#     "system_prompt": devops_subagent_prompt,
+#     "tools": tools["mcp_devops_tools"] if "mcp_devops_tools" in tools.keys() else [],
+# }
+
+# atlassian_subagent = {
+#     "name": "atlassian_subagent",
+#     "description": "Critiques AI policy research reports for completeness, clarity, and accuracy.",
+#     "system_prompt": atlassian_subagent_prompt,
+#     "tools": tools["mcp_atlassian_tools"] if "mcp_atlassian_tools" in tools.keys() else [],
+# }
+
+# math_subagent = {
+#     "name": "math_subagent",
+#     "description": "Critiques AI policy research reports for completeness, clarity, and accuracy.",
+#     "system_prompt": math_subagent_prompt,
+#     "tools": tools["mcp_math_tools"] if "mcp_math_tools" in tools.keys() else [],
+# }
+
+# sub_agents = [devops_subagent, atlassian_subagent, math_subagent]
