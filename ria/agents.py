@@ -52,16 +52,16 @@ agents = []
 def _create_agents():
     """Create the agents"""
     for worker in WORKERS:
-        globals()[f"{worker}_agent"] = lambda worker=worker : create_agent(
+        # `lambda worker_name=worker` defines a single parameter 'worker_name' for the lambda function and assigns it a default value, worker.
+        globals()[f"{worker}_agent"] = lambda worker_name=worker : create_agent(
             model=llm,
-            tools=tools[f"mcp_{worker}_tools"],
-            system_prompt=globals()[f"{worker}_agent_prompt"]
+            tools=tools[f"mcp_{worker_name}_tools"],
+            system_prompt=globals()[f"{worker_name}_agent_prompt"]
         )
         agents.append(globals()[f"{worker}_agent"]())
 
-# Agents combine language models with tools to create systems that can reason about tasks,
-# decide which tools to use, and iteratively work towards solutions.
-# An LLM Agent runs tools in a loop to achieve a goal.
+# Agents combine language models with tools to create systems that can reason about tasks, decide which tools to use,
+# and iteratively work towards solutions. An LLM Agent runs tools in a loop to achieve a goal.
 _create_agents()
 
 # ===================================== #
@@ -82,15 +82,15 @@ def _create_supervisor_tools():
             })
             return result["messages"][-1].text
         return agent_as_tool
-
+    
     for worker in WORKERS:
-        globals()[f"{worker}_agent_as_tool"] = create_agent_as_tool(
-            agent_func=globals()[f"{worker}_agent"],
-            tool_name=f"{worker}_agent_tool",
-            description=globals()[f"{worker}_agent_description"]
-        )
-        
-        supervisor_tools.append(globals()[f"{worker}_agent_as_tool"])
+        # `lambda worker_name=worker` defines a single parameter 'worker_name' for the lambda function and assigns it a default value, worker.
+        globals()[f"{worker}_agent_as_tool"] = lambda worker_name=worker : create_agent_as_tool(
+            agent_func=globals()[f"{worker_name}_agent"],
+            tool_name=f"{worker_name}_agent_tool",
+            description=globals()[f"{worker_name}_agent_description"]
+        ) 
+        supervisor_tools.append(globals()[f"{worker}_agent_as_tool"]())
 
 _create_supervisor_tools()
 
@@ -107,9 +107,9 @@ def create_supervisor():
     )
     return supervisor
 
-# ======================================= #
-# AGENT AS TOOL DEFINITIONS (ALTERNATIVES)
-# ======================================= #
+# ============================================= #
+#   AGENTS AS SUPERVISOR TOOLS (ALTERNATIVES)
+# ============================================= #
 # def create_agent_as_tool(agent_func, tool_name: str, description: str):
 #         """Create a tool from an agent function"""
 #         @tool(name_or_callable=tool_name, description=description)
@@ -187,10 +187,9 @@ def create_supervisor():
 #     return result["messages"][-1].text
 
 
-# ===================================== #
-#            DEEP AGENT
-# ===================================== #
-
+# ============================= #
+#    SUBAGENTS OF DEEP AGENT
+# ============================= #
 sub_agents = []
 
 def _create_subagents():
@@ -206,9 +205,12 @@ def _create_subagents():
 
 _create_subagents()
 
+# ===================================== #
+#            DEEP AGENT
+# ===================================== #
+
 def create_deepagent():
     """Create the deepagent that manages the agents"""
-
     deep_agent = create_deep_agent(
         model=llm,
         tools=[],
@@ -217,9 +219,9 @@ def create_deepagent():
     )
     return deep_agent
 
-# ===================================== #
-#   SUBAGENTS DEFINITIONS (ALTERNATIVE)
-# ===================================== #
+# ====================================== #
+#  SUBAGENTS OF DEEP AGENT (ALTERNATIVES)
+# ====================================== #
 
 # from .prompts import devops_subagent_prompt, atlassian_subagent_prompt, math_subagent_prompt
 # devops_subagent = {
