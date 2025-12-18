@@ -11,7 +11,7 @@ if __package__ == '' or __package__ is None:
     __package__ = 'ria'
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from .agents import create_supervisor
+from .agents import create_supervisor, create_deepagent
 from .utils import extract_ai_message_content
 
 async def chat_ui():
@@ -86,13 +86,15 @@ async def main():
 
     print("User Request:", user_request)
     print("\n" + "="*80 + "\n")
-    async for step in create_supervisor().astream(
+    # async for step in create_supervisor().astream(
+    async for step in create_deepagent().astream(
         {"messages": [{"role": "user", "content": user_request}]}
     ):
-        for update in step.values():
-            print(update)
-            for message in update.get("messages", []):
-                message.pretty_print()
+        print(step)
+        # for update in step.values():
+        #     print(update)
+        #     for message in update.get("messages", []):
+        #         message.pretty_print()
 
 def main_entry_point():
     # asyncio.run(chat_ui())
