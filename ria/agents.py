@@ -1,246 +1,114 @@
-import importlib
-from langchain.agents import create_agent
-from deepagents import create_deep_agent
-from langchain_core.tools import tool
-
-from .models import get_model
-from .tools import get_tools
-from .prompts import SUPERVISOR_PROMPT, DEEPAGENT_PROMPT, WORKERS
-
 # ===================================== #
-#               MODEL
+#            AGENT PROMPTS
 # ===================================== #
 
-# The model is the reasoning engine of your agent.
-llm = get_model()
+WORKERS = ["devops", "atlassian", "math"]
+
+devops_agent_prompt = """You are specialized agent to provide devops related information."""
+
+atlassian_agent_prompt = """You are specialized agent to provide information related to jira from a jira ticket queue."""
+
+math_agent_prompt = """You are a math agent. You can perform basic arithmetic operations like addition, multiplication, and division."""
+
+SUPERVISOR_PROMPT = (
+    "You are a SIMPLE ROUTER with one final summary task.\n\n"
+    "Based on the user request, respond with the tool one should use to help you with the request."
+
+    "Guidelines:\n"
+    "1. Always check the last message in the conversation to determine if the task has been completed.\n"
+    "2. If the task is complete, you might return the result to the user.\n"
+    "3. If the task is not complete, you would select appropriate tool and continue the workflow until completion.\n"
+    "4. If you have the final answer or outcome, return 'FINISH'.\n" 
+)
 
 # ===================================== #
-#               PROMPTS
+#        AGENT DESCRIPTIONS
 # ===================================== #
 
-def _get_prompts():
-    """Get the prompts for each agent"""
+devops_agent_description = """read metrics, read logs, download logs from devops server.
 
-    prompts_module_str = "ria.prompts"
-    prompts_module = importlib.import_module(prompts_module_str)
+    Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
 
-    for worker in WORKERS:
-        globals()[f"{worker}_agent_prompt"] = str(getattr(prompts_module, f"{worker}_agent_prompt"))
-        globals()[f"{worker}_agent_description"] = str(getattr(prompts_module, f"{worker}_agent_description"))
-        globals()[f"{worker}_subagent_prompt"] = str(getattr(prompts_module, f"{worker}_subagent_prompt"))
+    Input: Natural language devops request (e.g., 'Find the metrics that are emitting 4xx or 5xx errors in RG project for the last 2 hours')
+    """
 
+atlassian_agent_description = """read, update comments, re-assign jira issues.
 
-# You can shape how your agent approaches tasks by providing a prompt.
-_get_prompts()
+    Input: Natural language request related to jira issue (e.g., 'Get the details of jira id RG-3552 the EHRM project queue')
+    """
 
-# ===================================== #
-#               TOOLS
-# ===================================== #
+math_agent_description = """addition, multiplication, division operations.
 
-# Tools give agents the ability to take actions.
-tools = get_tools()
+    Input: Natural language request related to mathematical operation (e.g., 'Can you calculate 25 multiplied by 4 and then divided by 2?')
+    """
 
 # ===================================== #
-#               AGENTS
+#            SUBAGENT PROMPTS
 # ===================================== #
 
-agents = []
+devops_subagent_prompt = """
+You are a specialized AI policy researcher.
+Conduct in-depth research on government policies, global regulations, and ethical frameworks related to artificial intelligence.
 
-# create_agent builds a graph-based agent runtime using LangGraph. 
-# A graph consists of nodes (steps) and edges (connections) that define how your agent processes information. 
-# The agent moves through this graph, executing nodes like the model node (which calls the model), the tools node (which executes tools), or middleware.
-def _create_agents():
-    """Create the agents"""
-    for worker in WORKERS:
-        globals()[f"{worker}_agent"] = lambda worker=worker : create_agent(
-            model=llm,
-            tools=tools[f"mcp_{worker}_tools"],
-            system_prompt=globals()[f"{worker}_agent_prompt"]
-        )
-        agents.append(globals()[f"{worker}_agent"]())
+Your answer should:
+- Provide key updates and trends
+- Include relevant sources and laws (e.g., EU AI Act, U.S. Executive Orders)
+- Compare global approaches when relevant
+- Be written in clear, professional language
 
-# Agents combine language models with tools to create systems that can reason about tasks,
-# decide which tools to use, and iteratively work towards solutions.
-# An LLM Agent runs tools in a loop to achieve a goal.
-_create_agents()
+Only your FINAL message will be passed back to the main agent.
+"""
 
-# ===================================== #
-#      AGENTS AS SUPERVISOR TOOLS
-# ===================================== #
+atlassian_subagent_prompt = """
+You are a policy editor reviewing a report on AI governance.
+Check the report at `final_report.md` and the question at `question.txt`.
 
-supervisor_tools = []
+Focus on:
+- Accuracy and completeness of legal information
+- Proper citation of policy documents
+- Balanced analysis of regional differences
+- Clarity and neutrality of tone
 
-def _create_supervisor_tools():
-    """Create tools from agents"""
+Provide constructive feedback, but do NOT modify the report directly.
+"""
 
-    def create_agent_as_tool(agent_func, tool_name: str, description: str):
-        """Create a tool from an agent function"""
-        @tool(name_or_callable=tool_name, description=description)
-        async def agent_as_tool(request: str) -> str:
-            result = await agent_func().ainvoke({
-                "messages": [{"role": "user", "content": request}]
-            })
-            return result["messages"][-1].text
-        return agent_as_tool
+math_subagent_prompt = """
+You are a policy editor reviewing a report on AI governance.
+Check the report at `final_report.md` and the question at `question.txt`.
 
-    for worker in WORKERS:
-        globals()[f"{worker}_agent_as_tool"] = create_agent_as_tool(
-            agent_func=globals()[f"{worker}_agent"],
-            tool_name=f"{worker}_agent_tool",
-            description=globals()[f"{worker}_agent_description"]
-        )
-        
-        supervisor_tools.append(globals()[f"{worker}_agent_as_tool"])
+Focus on:
+- Accuracy and completeness of legal information
+- Proper citation of policy documents
+- Balanced analysis of regional differences
+- Clarity and neutrality of tone
 
-_create_supervisor_tools()
+Provide constructive feedback, but do NOT modify the report directly.
+"""
 
-# ===================================== #
-#           SUPERVISOR
-# ===================================== #
+DEEPAGENT_PROMPT = (
+    "You are a SIMPLE ROUTER with one final summary task.\n\n"
+    "Based on the user request, respond with the tool one should use to help you with the request."
 
-def create_supervisor():
-    """Create the supervisor that manages the agents"""
-    supervisor = create_agent(
-        model=llm,
-        tools=supervisor_tools,
-        system_prompt=SUPERVISOR_PROMPT
-    )
-    return supervisor
+    "Guidelines:\n"
+    "1. Always check the last message in the conversation to determine if the task has been completed.\n"
+    "2. If the task is complete, you might return the result to the user.\n"
+    "3. If the task is not complete, you would select appropriate tool and continue the workflow until completion.\n"
+    "4. If you have the final answer or outcome, return 'FINISH'.\n" 
+)
 
-# ======================================= #
-# AGENT AS TOOL DEFINITIONS (ALTERNATIVES)
-# ======================================= #
-# def create_agent_as_tool(agent_func, tool_name: str, description: str):
-#         """Create a tool from an agent function"""
-#         @tool(name_or_callable=tool_name, description=description)
-#         async def agent_as_tool(request: str) -> str:
-#             result = await agent_func().ainvoke({
-#                 "messages": [{"role": "user", "content": request}]
-#             })
-#             return result["messages"][-1].text
-#         return agent_as_tool
+policy_research_instructions = """
+You are an expert AI policy researcher and analyst.
+Your job is to investigate questions related to global AI regulation, ethics, and governance frameworks.
 
-# devops_agent_as_tool = create_agent_as_tool(
-#     agent_func=devops_agent,
-#     tool_name="devops_agent_tool",
-#     description="""read metrics, read logs, download logs from mc-dope (devops) servers.
-#     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
-#     Input: Natural language devops request (e.g., 'Are there any canary failures in mpaasoicnative tenancy of us-phoenix-1 region for the phonebook oracle integration cloud?')"""
-#     )
+1️Save the user's question to `question.txt`
+2️ Use the `policy-research-agent` to perform in-depth research
+3️ Write a detailed report to `final_report.md`
+4️ Optionally, ask the `policy-critique-agent` to critique your draft
+5️ Revise if necessary, then output the final, comprehensive report
 
-# atlassian_agent_as_tool = create_agent_as_tool(
-#     agent_func=atlassian_agent,
-#     tool_name="atlassian_agent_tool",
-#     description="""read, update comments, re-assign jira issues.
-#     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')"""
-#     )
-
-# agents_as_tools_str = """
-# @tool
-# async def devops_agent_as_tool(request: str) -> str:
-#     \"""read metrics, read logs, download logs from mc-dope (devops) servers.
-
-#     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
-
-#     Input: Natural language devops request (e.g., 'Are there any canary failures in mpaasoicnative tenancy of us-phoenix-1 region for the phonebook oracle integration cloud?')
-#     \"""
-#     result = await devops_agent().ainvoke({
-#         "messages": [{"role": "user", "content": request}]
-#     })
-#     return result["messages"][-1].text
-
-# @tool
-# async def atlassian_agent_as_tool(request: str) -> str:
-#     \"""read, update comments, re-assign jira issues.
-
-#     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')
-#     \"""
-#     result = await atlassian_agent().ainvoke({
-#         "messages": [{"role": "user", "content": request}]
-#     })
-#     return result["messages"][-1].text
-# """
-# exec(agents_as_tools_str) # Now, devops_agent_as_tool and atlassian_agent_as_tool are available in the current scope
-
-# @tool
-# async def devops_agent_as_tool(request: str) -> str:
-#     """read metrics, read logs, download logs from mc-dope (devops) servers.
-
-#     Use this when the user wants to read logs, read metrics, download logs, loook for canaries etc from mc_devops server.
-
-#     Input: Natural language devops request (e.g., 'Are there any canary failures in mpaasoicnative tenancy of us-phoenix-1 region for the phonebook oracle integration cloud?')
-#     """
-#     result = await devops_agent().ainvoke({
-#         "messages": [{"role": "user", "content": request}]
-#     })
-#     return result["messages"][-1].text
-
-# @tool
-# async def atlassian_agent_as_tool(request: str) -> str:
-#     """read, update comments, re-assign jira issues.
-
-#     Input: Natural language request related to jira issue (e.g., 'Get the details of jira id EHRM-3552 the EHRM project queue')
-#     """
-#     result = await atlassian_agent().ainvoke({
-#         "messages": [{"role": "user", "content": request}]
-#     })
-#     return result["messages"][-1].text
-
-
-# ===================================== #
-#            DEEP AGENT
-# ===================================== #
-
-sub_agents = []
-
-def _create_subagents():
-    """Create subagents"""
-    for worker in WORKERS:
-        globals()[f"{worker}_subagent"] = {
-            "name": f"{worker}_subagent",
-            "description": globals()[f"{worker}_agent_description"],
-            "system_prompt": globals()[f"{worker}_subagent_prompt"],
-            "tools": tools[f"mcp_{worker}_tools"] if f"mcp_{worker}_tools" in tools.keys() else [],
-        }
-        sub_agents.append(globals()[f"{worker}_subagent"])
-
-_create_subagents()
-
-def create_deepagent():
-    """Create the deepagent that manages the agents"""
-
-    deep_agent = create_deep_agent(
-        model=llm,
-        tools=[],
-        system_prompt=DEEPAGENT_PROMPT,
-        subagents=sub_agents,
-    )
-    return deep_agent
-
-# ===================================== #
-#   SUBAGENTS DEFINITIONS (ALTERNATIVE)
-# ===================================== #
-
-# from .prompts import devops_subagent_prompt, atlassian_subagent_prompt, math_subagent_prompt
-# devops_subagent = {
-#     "name": "devops_subagent",
-#     "description": "Used to research specific AI policy and regulation questions in depth.",
-#     "system_prompt": devops_subagent_prompt,
-#     "tools": tools["mcp_devops_tools"] if "mcp_devops_tools" in tools.keys() else [],
-# }
-
-# atlassian_subagent = {
-#     "name": "atlassian_subagent",
-#     "description": "Critiques AI policy research reports for completeness, clarity, and accuracy.",
-#     "system_prompt": atlassian_subagent_prompt,
-#     "tools": tools["mcp_atlassian_tools"] if "mcp_atlassian_tools" in tools.keys() else [],
-# }
-
-# math_subagent = {
-#     "name": "math_subagent",
-#     "description": "Critiques AI policy research reports for completeness, clarity, and accuracy.",
-#     "system_prompt": math_subagent_prompt,
-#     "tools": tools["mcp_math_tools"] if "mcp_math_tools" in tools.keys() else [],
-# }
-
-# sub_agents = [devops_subagent, atlassian_subagent, math_subagent]
+When writing the final report:
+- Use Markdown with clear sections (## for each)
+- Include citations in [Title](URL) format
+- Add a ### Sources section at the end
+- Write in professional, neutral tone suitable for policy briefings
+"""
