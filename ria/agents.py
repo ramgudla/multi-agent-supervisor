@@ -65,7 +65,7 @@ def _create_agents():
 _create_agents()
 
 # ===================================== #
-#      AGENTS AS SUPERVISOR TOOLS
+#     SUBAGENTS AS SUPERVISOR TOOLS
 # ===================================== #
 
 supervisor_tools = []
@@ -108,7 +108,7 @@ def create_supervisor():
     return supervisor
 
 # ============================================= #
-#   AGENTS AS SUPERVISOR TOOLS (ALTERNATIVES)
+#  SUBAGENTS AS SUPERVISOR TOOLS (ALTERNATIVES)
 # ============================================= #
 # def create_agent_as_tool(agent_func, tool_name: str, description: str):
 #         """Create a tool from an agent function"""
@@ -188,7 +188,7 @@ def create_supervisor():
 
 
 # ============================= #
-#    SUBAGENTS OF DEEP AGENT
+#    SUBAGENTS OF DEEPAGENT
 # ============================= #
 sub_agents = []
 
@@ -206,7 +206,7 @@ def _create_subagents():
 _create_subagents()
 
 # ===================================== #
-#            DEEP AGENT
+#            DEEPAGENT
 # ===================================== #
 
 def create_deepagent():
@@ -220,7 +220,7 @@ def create_deepagent():
     return deep_agent
 
 # ====================================== #
-#  SUBAGENTS OF DEEP AGENT (ALTERNATIVES)
+#  SUBAGENTS OF DEEPAGENT (ALTERNATIVES)
 # ====================================== #
 
 # from .prompts import devops_subagent_prompt, atlassian_subagent_prompt, math_subagent_prompt
