@@ -12,7 +12,7 @@ if __package__ == '' or __package__ is None:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from .agents import create_supervisor, create_deepagent
-from .utils import extract_ai_message_content
+from .utils import extract_ai_message_content, parse_messages
 
 async def chat_ui():
 
@@ -81,20 +81,27 @@ async def main():
         # Get the details of jira id RG-3552 from the RG project queue.
         # Summarize the jira issue RG-457
     user_request = (
-         "Can you calculate 25 multiplied by 4?"
+         "Get the details of jira id CDA-27479 from the CDA project queue."
         )
 
     print("User Request:", user_request)
     print("\n" + "="*80 + "\n")
+
+    # ivoke the supervisor and print the streaming steps
     # async for step in create_supervisor().astream(
     async for step in create_deepagent().astream(
         {"messages": [{"role": "user", "content": user_request}]}
     ):
         print(step)
-        # for update in step.values():
-        #     print(update)
-        #     for message in update.get("messages", []):
-        #         message.pretty_print()
+        for update in step.values():
+            print(update)
+            # for message in update.get("messages", []):
+            #     message.pretty_print()
+
+    # Alternatively, invoke the deepagent and print the final parsed result
+    # result = await create_deepagent().ainvoke({"messages": [{"role": "user", "content": user_request}]})
+    # parsed = parse_messages(result)
+    # print(parsed)
 
 def main_entry_point():
     # asyncio.run(chat_ui())
