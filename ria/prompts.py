@@ -1,30 +1,7 @@
 WORKERS = ["devops", "atlassian", "math"]
 
 # ===================================== #
-#            AGENT PROMPTS
-# ===================================== #
-
-devops_agent_prompt = """You are specialized agent to provide the following information.
-You can search logs via lumnerjack, download logs, get shepherd flocks and shepherd releases, read metrics, get alarms, and loook for canary status."""
-
-atlassian_agent_prompt = """You are specialized agent to Get details of a specific Jira issue including its Epic links and relationship information.
-You can also update comments and re-assign Jira issues."""
-
-math_agent_prompt = """You are a math agent. You can perform basic arithmetic operations like addition, multiplication, and division."""
-
-SUPERVISOR_PROMPT = (
-    "You are a SIMPLE ROUTER with one final summary task.\n\n"
-    "Based on the user request, respond with the tool one should use to help you with the request."
-
-    "Guidelines:\n"
-    "1. Always check the last message in the conversation to determine if the task has been completed.\n"
-    "2. If the task is complete, you might return the result to the user.\n"
-    "3. If the task is not complete, you would select appropriate tool and continue the workflow until completion.\n"
-    "4. If you have the final answer or outcome, summarize it and close the workflow.\n" 
-)
-
-# ===================================== #
-#        AGENT DESCRIPTIONS
+#        SUBAGENT DESCRIPTIONS
 # ===================================== #
 
 devops_agent_description = """read metrics, read logs, download logs from devops server.
@@ -48,14 +25,28 @@ math_agent_description = """addition, multiplication, division operations.
 #            SUBAGENT PROMPTS
 # ===================================== #
 
-devops_subagent_prompt = """You are specialized agent to provide the following information.
+devops_agent_prompt = """You are specialized agent to provide the following information.
 You can search logs via lumnerjack, download logs, get shepherd flocks and shepherd releases, read metrics, get alarms, and loook for canary status."""
 
-atlassian_subagent_prompt = """You are specialized agent to Get details of a specific Jira issue including its Epic links and relationship information.
+atlassian_agent_prompt = """You are specialized agent to Get details of a specific Jira issue including its Epic links and relationship information.
 You can also update comments and re-assign Jira issues."""
 
-math_subagent_prompt ="""You are a specialized agent to do math calculations. You can perform basic arithmetic operations like addition, multiplication, and division.
-Provide constructive feedback, but do NOT modify the report directly."""
+math_agent_prompt = """You are a math agent. You can perform basic arithmetic operations like addition, multiplication, and division."""
+
+# ===================================== #
+#            MAIN AGENT PROMPTS
+# ===================================== #
+
+SUPERVISOR_PROMPT = (
+    "You are a SIMPLE ROUTER with one final summary task.\n\n"
+    "Based on the user request, respond with the tool one should use to help you with the request."
+
+    "Guidelines:\n"
+    "1. Always check the last message in the conversation to determine if the task has been completed.\n"
+    "2. If the task is complete, you might return the result to the user.\n"
+    "3. If the task is not complete, you would select appropriate tool and continue the workflow until completion.\n"
+    "4. If you have the final answer or outcome, summarize it and close the workflow.\n" 
+)
 
 DEEPAGENT_PROMPT = """
     You are the Master Orchestrator. 
