@@ -1,8 +1,8 @@
+WORKERS = ["devops", "atlassian", "math"]
+
 # ===================================== #
 #            AGENT PROMPTS
 # ===================================== #
-
-WORKERS = ["devops", "atlassian", "math"]
 
 devops_agent_prompt = """You are specialized agent to provide the following information.
 You can search logs via lumnerjack, download logs, get shepherd flocks and shepherd releases, read metrics, get alarms, and loook for canary status."""
