@@ -1,4 +1,4 @@
-WORKERS = ["devops", "atlassian", "math"]
+SUBAGENTS = ["devops", "atlassian", "math"]
 
 # ===================================== #
 #        SUBAGENT DESCRIPTIONS
@@ -13,7 +13,7 @@ devops_agent_description = """read metrics, read logs, download logs from devops
 
 atlassian_agent_description = """read, update comments, re-assign jira issues.
 
-    Input: Natural language request related to jira issue (e.g., 'Get the details of jira id RG-3552 the RG project queue')
+    Input: Natural language request related to jira issue (e.g., 'Get the details of jira id RG-3552 from the RG project queue')
     """
 
 math_agent_description = """addition, multiplication, division operations.
@@ -28,8 +28,8 @@ math_agent_description = """addition, multiplication, division operations.
 devops_agent_prompt = """You are specialized agent to provide the following information.
 You can search logs via lumnerjack, download logs, get shepherd flocks and shepherd releases, read metrics, get alarms, and loook for canary status."""
 
-atlassian_agent_prompt = """You are specialized agent to Get details of a specific Jira issue including its Epic links and relationship information.
-You can also update comments and re-assign Jira issues."""
+atlassian_agent_prompt = """You are specialized agent to Get details of a specific Jira issue from a jira queue.
+You can also read and update comments and re-assign Jira issues."""
 
 math_agent_prompt = """You are a math agent. You can perform basic arithmetic operations like addition, multiplication, and division."""
 
