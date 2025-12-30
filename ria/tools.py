@@ -4,17 +4,17 @@ from langchain_core.tools import BaseTool
 from typing import Dict, List
 
 mcpServers = {
-    "mcp_devops": {
+    "mcp-devops": {
       "timeout": 60,
       "transport": "sse",
       "url": "http://localhost:8081/sse"
     },
-    "mcp_atlassian": {
+    "mcp-atlassian": {
       "timeout": 60,
       "transport": "sse",
       "url": "http://localhost:8082/sse"
     },
-    "mcp_math": {
+    "mcp-math": {
          "command": "python",
          "args": ["mcp_server.py"],
          "transport": "stdio",
@@ -28,7 +28,7 @@ async def get_tools_by_server_name() -> Dict[str, List[BaseTool]]:
     tools_by_server = {}
     for server_name in mcpServers.keys():
         tools = await client.get_tools(server_name=server_name)
-        tools_by_server[server_name + "_tools"] = tools
+        tools_by_server[server_name] = tools
     return tools_by_server
 
 def get_tools():
