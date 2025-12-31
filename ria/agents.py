@@ -4,8 +4,8 @@ from deepagents import create_deep_agent
 from langchain_core.tools import tool
 
 from .models import get_model
-from .tools import get_tools
 from .prompts import SUPERVISOR_PROMPT, DEEPAGENT_PROMPT, SUBAGENTS
+from .tools import get_tools
 
 # ===================================== #
 #               MODEL
@@ -13,13 +13,6 @@ from .prompts import SUPERVISOR_PROMPT, DEEPAGENT_PROMPT, SUBAGENTS
 
 # The model is the reasoning engine of your agent.
 llm = get_model()
-
-# ===================================== #
-#               TOOLS
-# ===================================== #
-
-# Tools give agents the ability to take actions.
-tools = get_tools()
 
 # ===================================== #
 #               PROMPTS
@@ -39,10 +32,15 @@ def _get_prompts():
 _get_prompts()
 
 # ===================================== #
-#               AGENTS
+#               TOOLS
 # ===================================== #
 
-agents = []
+# Tools give agents the ability to take actions.
+tools = get_tools()
+
+# ===================================== #
+#               SUBAGENTS
+# ===================================== #
 
 # create_agent builds a graph-based agent runtime using LangGraph. 
 # A graph consists of nodes (steps) and edges (connections) that define how your agent processes information. 
@@ -56,7 +54,6 @@ def _create_agents():
             tools=tools[f"mcp-{x}"],
             system_prompt=globals()[f"{x}_agent_prompt"]
         )
-        agents.append(globals()[f"{subagent_name}_agent"]())
 
 # Agents combine language models with tools to create systems that can reason about tasks, decide which tools to use,
 # and iteratively work towards solutions. An LLM Agent runs tools in a loop to achieve a goal.
@@ -92,7 +89,7 @@ def _create_supervisor_tools():
 _create_supervisor_tools()
 
 # ===================================== #
-#           SUPERVISOR
+#              SUPERVISOR
 # ===================================== #
 
 def create_supervisor():
@@ -105,11 +102,12 @@ def create_supervisor():
     return supervisor
 
 # ============================= #
-#    SUBAGENTS OF DEEPAGENT
+#           SUBAGENTS
 # ============================= #
 
-sub_agents = []
+subagents_ = []
 
+# Define the subagent configurations
 def _create_subagents():
     """Create subagents"""
     for subagent_name in SUBAGENTS:
@@ -119,7 +117,7 @@ def _create_subagents():
             "system_prompt": globals()[f"{subagent_name}_agent_prompt"],
             "tools": tools[f"mcp-{subagent_name}"] if f"mcp-{subagent_name}" in tools.keys() else [],
         }
-        sub_agents.append(globals()[f"{subagent_name}_subagent"])
+        subagents_.append(globals()[f"{subagent_name}_subagent"])
 
 _create_subagents()
 
@@ -129,10 +127,10 @@ _create_subagents()
 
 def create_deepagent():
     """Create the deepagent that manages the agents"""
-    deep_agent = create_deep_agent(
+    deepagent = create_deep_agent(
         model=llm,
         tools=[],
         system_prompt=DEEPAGENT_PROMPT,
-        subagents=sub_agents,
+        subagents=subagents_
     )
-    return deep_agent
+    return deepagent
