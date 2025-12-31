@@ -3,7 +3,7 @@ from langchain.agents import create_agent
 from deepagents import create_deep_agent
 from langchain_core.tools import tool
 
-from .models import get_model
+from .llm_provider import LLMRegistry
 from .prompts import SUPERVISOR_PROMPT, DEEPAGENT_PROMPT, SUBAGENTS
 from .tools import get_tools
 
@@ -12,7 +12,7 @@ from .tools import get_tools
 # ===================================== #
 
 # The model is the reasoning engine of your agent.
-llm = get_model()
+llm = LLMRegistry.get("qwen2.5-14b")
 
 # ===================================== #
 #               PROMPTS
