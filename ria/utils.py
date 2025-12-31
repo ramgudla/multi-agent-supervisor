@@ -23,3 +23,39 @@ def extract_ai_message_content(stream) -> List[str]:
             #     continue
         
     return ai_message_contents
+
+def parse_messages(result: dict):
+    data = {
+        "human": [],
+        "ai": [],
+        "tools": [],
+    }
+
+    for msg in result.get("messages", []):
+        if hasattr(msg, "name"):  # ToolMessage (e.g., name='write_file')
+            data["tools"].append({
+                "tool_name": getattr(msg, "name", None),
+                "tool_call_id": getattr(msg, "tool_call_id", None),
+                "content": getattr(msg, "content", None)
+            })
+        elif hasattr(msg, "tool_calls") and msg.tool_calls:
+            # AIMessage with tool calls (the reasoning + tool actions)
+            calls = []
+            for call in msg.tool_calls:
+                calls.append({
+                    "name": call["name"],
+                    "args": call["args"]
+                })
+            data["ai"].append({
+                "content": getattr(msg, "content", None),
+                "tool_calls": calls
+            })
+        else:
+            # HumanMessage or simple AIMessage
+            msg_type = type(msg).__name__
+            entry = {"type": msg_type, "content": getattr(msg, "content", None)}
+            if msg_type.lower().startswith("human"):
+                data["human"].append(entry)
+            else:
+                data["ai"].append(entry)
+    return data
