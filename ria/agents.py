@@ -63,7 +63,7 @@ _create_agents()
 #     SUBAGENTS AS SUPERVISOR TOOLS
 # ===================================== #
 
-supervisor_tools = []
+supervisortools_ = []
 
 def _create_supervisor_tools():
     """Create tools from agents"""
@@ -84,7 +84,7 @@ def _create_supervisor_tools():
             tool_name=f"{x}_agent_tool",
             description=globals()[f"{x}_agent_description"]
         ) 
-        supervisor_tools.append(globals()[f"{subagent_name}_agent_as_tool"]())
+        supervisortools_.append(globals()[f"{subagent_name}_agent_as_tool"]())
 
 _create_supervisor_tools()
 
@@ -96,7 +96,7 @@ def create_supervisor():
     """Create the supervisor that manages the agents"""
     supervisor = create_agent(
         model=llm,
-        tools=supervisor_tools,
+        tools=supervisortools_,
         system_prompt=SUPERVISOR_PROMPT
     )
     return supervisor
