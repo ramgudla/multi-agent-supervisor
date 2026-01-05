@@ -13,7 +13,7 @@ class LLMRegistry:
     """Registry of available LLM models with pre-initialized instances.
 
     This class maintains a list of LLM configurations and provides
-    methods to retrieve them by name with optional argument overrides.
+    method to retrieve them by name.
     """
 
     # Class-level variable containing all available LLM models
@@ -37,7 +37,7 @@ class LLMRegistry:
 
     @classmethod
     def get(cls, model_name: str) -> BaseChatModel:
-        """Get an LLM by name with optional argument overrides.
+        """Get an LLM by name.
 
         Args:
             model_name: Name of the model to retrieve
