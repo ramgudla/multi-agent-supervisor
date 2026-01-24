@@ -94,7 +94,7 @@ def create_deepagent():
     deepagent = create_deep_agent(
         model=llm,
         tools=[],
-        system_prompt=DEEPAGENT_PROMPT,
+        system_prompt=SUPERVISOR_PROMPT,
         subagents=[_create_subagent(subagent) for subagent in SUBAGENTS],
     )
     return deepagent
